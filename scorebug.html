@@ -303,16 +303,6 @@ async function loadSchedule() {
   } catch(e) { console.error(e); }
 }
 
-function autoReplace(bug) {
-  if (!todayGames.length) return;
-  const watchedPks = new Set(bugs.map(b => String(b.gamePk)).filter(Boolean));
-  const candidates = todayGames.filter(g => !watchedPks.has(String(g.gamePk)));
-  if (!candidates.length) return;
-  const live    = candidates.filter(g => g.status.abstractGameState === 'Live');
-  const preview = candidates.filter(g => g.status.abstractGameState === 'Preview');
-  const next    = live[0] || preview[0] || candidates[0];
-  watch(bug, next.gamePk);
-}
 
 function watch(bug, pk) {
   bug.gamePk = pk || null;
@@ -381,7 +371,6 @@ function render(bug, data) {
       bug.done = true;
       clearInterval(bug.pollTimer);
       bug.pollTimer = null;
-      setTimeout(() => autoReplace(bug), 10000);
     }
   } else if (state === 'Live') {
     numEl.textContent = inning;
