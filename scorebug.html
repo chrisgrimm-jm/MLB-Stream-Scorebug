@@ -254,17 +254,44 @@ async function apiFetch(url) {
 // ── ntfy SSE ──
 if (TOPIC) connectNtfy();
 
+let _sse = null;
+let _sseReconnecting = false;
+let _lastMsg = 0;
+
 function connectNtfy() {
-  const sse = new EventSource(`https://ntfy.sh/${TOPIC}/sse?since=30m`);
-  sse.addEventListener('message', e => {
+  if (_sseReconnecting) return;
+  if (_sse) { try { _sse.close(); } catch {} _sse = null; }
+
+  _sse = new EventSource(`https://ntfy.sh/${TOPIC}/sse?since=30m`);
+  _lastMsg = Date.now();
+
+  _sse.addEventListener('message', e => {
+    _lastMsg = Date.now();
     try {
       const outer = JSON.parse(e.data);
-      const cfg   = JSON.parse(outer.message);
+      if (outer.event === 'keepalive') return;
+      const cfg = JSON.parse(outer.message);
       applyConfig(cfg);
     } catch {}
   });
-  sse.onerror = () => { sse.close(); setTimeout(connectNtfy, 5000); };
+
+  _sse.onerror = () => {
+    if (_sseReconnecting) return;
+    _sseReconnecting = true;
+    try { _sse.close(); } catch {}
+    _sse = null;
+    setTimeout(() => { _sseReconnecting = false; connectNtfy(); }, 5000);
+  };
 }
+
+// Watchdog — if no message (including keepalives) for 90s, force reconnect
+setInterval(() => {
+  if (!TOPIC || _sseReconnecting) return;
+  if (Date.now() - _lastMsg > 90000) {
+    _sseReconnecting = false;
+    connectNtfy();
+  }
+}, 30000);
 
 function applyConfig(cfg) {
   if (typeof cfg.delay === 'number') delayMs = cfg.delay;
