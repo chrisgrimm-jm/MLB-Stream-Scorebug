@@ -16,7 +16,7 @@ html, body {
 .root {
   position: fixed;
   bottom: 40px;
-  left: 40px;
+  right: 40px;
   font-family: 'Barlow', sans-serif;
   font-weight: 700;
   display: flex;
@@ -179,7 +179,7 @@ const TOPIC  = params.get('topic') || '';
 
 let delayMs  = 30000;
 let pollRate = 5000;
-let showCount = true;
+let countHidden = [false, false, false];
 let todayGames = [];
 
 // ── Build bug HTML ──
@@ -314,12 +314,12 @@ function applyConfig(cfg) {
       if (wrap) wrap.style.display = h ? 'none' : '';
     });
   }
-  if (typeof cfg.showCount === 'boolean') {
-    showCount = cfg.showCount;
-    [0,1,2].forEach(i => {
+  if (Array.isArray(cfg.countHidden)) {
+    cfg.countHidden.forEach((h, i) => {
+      countHidden[i] = h;
       const cb = document.getElementById(`count-bar-${i}`);
-      if (cb && cb.style.display !== 'none') {
-        cb.style.visibility = showCount ? '' : 'hidden';
+      if (cb && bugs[i].done === false) {
+        cb.style.display = h ? 'none' : '';
       }
     });
   }
@@ -429,11 +429,10 @@ function render(bug, data) {
   bug.prev = { away: awayScore, home: homeScore };
 
   const cb = document.getElementById(`count-bar-${i}`);
-  if (isFinal) {
+  if (isFinal || countHidden[i]) {
     cb.style.display = 'none';
   } else {
     cb.style.display = '';
-    cb.style.visibility = showCount ? '' : 'hidden';
     updateDots(`ball-dots-${i}`,   ls.balls   ?? 0, 3, 'on-b');
     updateDots(`strike-dots-${i}`, ls.strikes ?? 0, 2, 'on-s');
     updateDots(`out-dots-${i}`,    ls.outs    ?? 0, 2, 'on-o');

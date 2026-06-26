@@ -188,10 +188,6 @@ option { background: #0e1420; }
         <option value="45000">45s</option>
       </select>
     </div>
-    <div class="row">
-      <label>Count</label>
-      <button class="toggle-btn" id="count-toggle" onclick="toggleCount()" style="flex:1;text-align:center;">Visible</button>
-    </div>
   </div>
 
   <!-- Bug 1 -->
@@ -201,6 +197,7 @@ option { background: #0e1420; }
       <div class="bug-meta">
         <div class="sdot" id="sdot-0"></div>
         <span class="stext" id="stext-0">—</span>
+        <button class="toggle-btn" id="count-toggle-0" onclick="toggleCount(0)">Count</button>
       </div>
     </div>
     <select id="game-sel-0" onchange="saveAndPush()"><option value="">Loading…</option></select>
@@ -213,6 +210,7 @@ option { background: #0e1420; }
       <div class="bug-meta">
         <div class="sdot" id="sdot-1"></div>
         <span class="stext" id="stext-1">—</span>
+        <button class="toggle-btn" id="count-toggle-1" onclick="toggleCount(1)">Count</button>
         <button class="toggle-btn" id="toggle-1" onclick="toggleBug(1)">Hide</button>
       </div>
     </div>
@@ -226,6 +224,7 @@ option { background: #0e1420; }
       <div class="bug-meta">
         <div class="sdot" id="sdot-2"></div>
         <span class="stext" id="stext-2">—</span>
+        <button class="toggle-btn" id="count-toggle-2" onclick="toggleCount(2)">Count</button>
         <button class="toggle-btn" id="toggle-2" onclick="toggleBug(2)">Hide</button>
       </div>
     </div>
@@ -240,18 +239,18 @@ const MLB = 'https://statsapi.mlb.com';
 let todayGames = [];
 let hiddenState = [false, false, false];
 let pushTimer = null;
-let countVisible = true;
+let countHidden = [false, false, false];
 
 // ── Restore saved settings ──
 const saved = JSON.parse(localStorage.getItem('scorebug-ctrl') || '{}');
 const topicInput = document.getElementById('topic-input');
 topicInput.value = saved.topic || '';
-if (saved.rate)   document.getElementById('rate-sel').value  = saved.rate;
-if (saved.delay)  document.getElementById('delay-sel').value = saved.delay;
-if (saved.hidden) hiddenState = saved.hidden;
-if (saved.countVisible === false) countVisible = false;
+if (saved.rate)        document.getElementById('rate-sel').value  = saved.rate;
+if (saved.delay)       document.getElementById('delay-sel').value = saved.delay;
+if (saved.hidden)      hiddenState  = saved.hidden;
+if (saved.countHidden) countHidden  = saved.countHidden;
 updateToggleButtons();
-updateCountToggle();
+updateCountToggles();
 updateObsUrl();
 
 topicInput.addEventListener('input', () => { updateObsUrl(); saveAndPush(); });
@@ -279,17 +278,19 @@ function toggleBug(i) {
   saveAndPush();
 }
 
-function toggleCount() {
-  countVisible = !countVisible;
-  updateCountToggle();
+function toggleCount(i) {
+  countHidden[i] = !countHidden[i];
+  updateCountToggles();
   saveAndPush();
 }
 
-function updateCountToggle() {
-  const btn = document.getElementById('count-toggle');
-  if (!btn) return;
-  btn.textContent = countVisible ? 'Visible' : 'Hidden';
-  btn.classList.toggle('hidden-state', !countVisible);
+function updateCountToggles() {
+  [0,1,2].forEach(i => {
+    const btn = document.getElementById(`count-toggle-${i}`);
+    if (!btn) return;
+    btn.textContent = countHidden[i] ? 'Count Off' : 'Count';
+    btn.classList.toggle('hidden-state', countHidden[i]);
+  });
 }
 
 function updateToggleButtons() {
@@ -307,7 +308,7 @@ function saveSettings() {
     rate:   document.getElementById('rate-sel').value,
     delay:  document.getElementById('delay-sel').value,
     hidden: hiddenState,
-    countVisible,
+    countHidden,
     games:  [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value)
   }));
 }
@@ -326,7 +327,7 @@ async function pushConfig() {
     delay:  parseInt(document.getElementById('delay-sel').value),
     rate:   parseInt(document.getElementById('rate-sel').value),
     hidden: hiddenState,
-    showCount: countVisible
+    countHidden
   };
   const statusEl = document.getElementById('push-status');
   try {
