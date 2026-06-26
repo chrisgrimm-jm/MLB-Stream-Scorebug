@@ -253,11 +253,11 @@ async function apiFetch(url) {
 }
 
 // ── ntfy SSE ──
-if (TOPIC) connectNtfy();
-
 let _sse = null;
 let _sseReconnecting = false;
 let _lastMsg = 0;
+
+if (TOPIC) connectNtfy();
 
 function connectNtfy() {
   if (_sseReconnecting) return;
