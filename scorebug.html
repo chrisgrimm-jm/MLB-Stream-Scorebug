@@ -179,6 +179,7 @@ const TOPIC  = params.get('topic') || '';
 
 let delayMs  = 30000;
 let pollRate = 5000;
+let showCount = true;
 let todayGames = [];
 
 // ── Build bug HTML ──
@@ -313,6 +314,15 @@ function applyConfig(cfg) {
       if (wrap) wrap.style.display = h ? 'none' : '';
     });
   }
+  if (typeof cfg.showCount === 'boolean') {
+    showCount = cfg.showCount;
+    [0,1,2].forEach(i => {
+      const cb = document.getElementById(`count-bar-${i}`);
+      if (cb && cb.style.display !== 'none') {
+        cb.style.visibility = showCount ? '' : 'hidden';
+      }
+    });
+  }
 }
 
 // ── Schedule + polling ──
@@ -423,6 +433,7 @@ function render(bug, data) {
     cb.style.display = 'none';
   } else {
     cb.style.display = '';
+    cb.style.visibility = showCount ? '' : 'hidden';
     updateDots(`ball-dots-${i}`,   ls.balls   ?? 0, 3, 'on-b');
     updateDots(`strike-dots-${i}`, ls.strikes ?? 0, 2, 'on-s');
     updateDots(`out-dots-${i}`,    ls.outs    ?? 0, 2, 'on-o');

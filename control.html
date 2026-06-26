@@ -188,6 +188,10 @@ option { background: #0e1420; }
         <option value="45000">45s</option>
       </select>
     </div>
+    <div class="row">
+      <label>Count</label>
+      <button class="toggle-btn" id="count-toggle" onclick="toggleCount()" style="flex:1;text-align:center;">Visible</button>
+    </div>
   </div>
 
   <!-- Bug 1 -->
@@ -236,6 +240,7 @@ const MLB = 'https://statsapi.mlb.com';
 let todayGames = [];
 let hiddenState = [false, false, false];
 let pushTimer = null;
+let countVisible = true;
 
 // ── Restore saved settings ──
 const saved = JSON.parse(localStorage.getItem('scorebug-ctrl') || '{}');
@@ -244,7 +249,9 @@ topicInput.value = saved.topic || '';
 if (saved.rate)   document.getElementById('rate-sel').value  = saved.rate;
 if (saved.delay)  document.getElementById('delay-sel').value = saved.delay;
 if (saved.hidden) hiddenState = saved.hidden;
+if (saved.countVisible === false) countVisible = false;
 updateToggleButtons();
+updateCountToggle();
 updateObsUrl();
 
 topicInput.addEventListener('input', () => { updateObsUrl(); saveAndPush(); });
@@ -272,6 +279,19 @@ function toggleBug(i) {
   saveAndPush();
 }
 
+function toggleCount() {
+  countVisible = !countVisible;
+  updateCountToggle();
+  saveAndPush();
+}
+
+function updateCountToggle() {
+  const btn = document.getElementById('count-toggle');
+  if (!btn) return;
+  btn.textContent = countVisible ? 'Visible' : 'Hidden';
+  btn.classList.toggle('hidden-state', !countVisible);
+}
+
 function updateToggleButtons() {
   [1,2].forEach(i => {
     const btn = document.getElementById(`toggle-${i}`);
@@ -287,6 +307,7 @@ function saveSettings() {
     rate:   document.getElementById('rate-sel').value,
     delay:  document.getElementById('delay-sel').value,
     hidden: hiddenState,
+    countVisible,
     games:  [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value)
   }));
 }
@@ -304,7 +325,8 @@ async function pushConfig() {
     games:  [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value || ''),
     delay:  parseInt(document.getElementById('delay-sel').value),
     rate:   parseInt(document.getElementById('rate-sel').value),
-    hidden: hiddenState
+    hidden: hiddenState,
+    showCount: countVisible
   };
   const statusEl = document.getElementById('push-status');
   try {
