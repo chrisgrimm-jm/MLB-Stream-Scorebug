@@ -48,9 +48,9 @@ html, body {
   flex-shrink: 0; border-radius: 3px;
 }
 
-.seg-away { width: 90px; height: 46px; background: #e8291c; }
+.seg-away { width: 93px; height: 46px; background: #e8291c; }
 .away-abbr {
-  font-size: 32px; font-weight: 900;
+  font-size: 37px; font-weight: 900;
   letter-spacing: .02em; color: #fff;
   text-transform: uppercase;
   text-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -101,16 +101,16 @@ html, body {
 .base-sq-3 { top: 18px; left:  11px; }
 
 .seg-home-score { width: 42px; height: 46px; background: #fff; }
-.seg-home { width: 90px; height: 46px; background: #134a8e; }
+.seg-home { width: 93px; height: 46px; background: #134a8e; }
 .home-abbr {
-  font-size: 32px; font-weight: 900;
+  font-size: 37px; font-weight: 900;
   letter-spacing: .02em; color: #fff;
   text-transform: uppercase;
   text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .score-num {
-  font-size: 38px; font-weight: 900;
+  font-size: 42px; font-weight: 900;
   color: #000; letter-spacing: -.01em;
   line-height: 1; transition: color .25s;
 }
@@ -440,7 +440,7 @@ function render(bug, data) {
     document.getElementById(`base1-${i}`).classList.toggle('on', !!off.first);
     document.getElementById(`base2-${i}`).classList.toggle('on', !!off.second);
     document.getElementById(`base3-${i}`).classList.toggle('on', !!off.third);
-    cb.style.marginLeft = half === 'Bottom' ? '132px' : '0px';
+    cb.style.marginLeft = half === 'Bottom' ? '135px' : '0px';
     cb.classList.add('show');
   }
 }
