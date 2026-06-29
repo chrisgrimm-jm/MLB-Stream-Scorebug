@@ -354,12 +354,15 @@ function watch(bug, pk) {
 
 async function poll(bug) {
   if (!bug.gamePk) return;
+  const pk = bug.gamePk;
   try {
-    const data = await apiFetch(`${MLB}/api/v1.1/game/${bug.gamePk}/feed/live`);
+    const data = await apiFetch(`${MLB}/api/v1.1/game/${pk}/feed/live`);
+    if (pk !== bug.gamePk) return;
     const useDelay = delayMs > 0 && !bug.firstRender;
     bug.firstRender = false;
     if (useDelay) {
       setTimeout(() => {
+        if (pk !== bug.gamePk) return;
         render(bug, data);
       }, delayMs);
     } else {
