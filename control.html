@@ -366,7 +366,8 @@ async function loadSchedule() {
         opt.value = g.gamePk;
         const aw = g.teams.away.team.abbreviation;
         const hw = g.teams.home.team.abbreviation;
-        opt.textContent = `${aw} @ ${hw} — ${g.status.detailedState}`;
+        const dt = g.gameDate ? new Date(g.gameDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+        opt.textContent = `${aw} @ ${hw} — ${dt} · ${g.status.detailedState}`;
         sel.appendChild(opt);
       });
       if (savedGames[i] && sel.querySelector(`option[value="${savedGames[i]}"]`)) {
