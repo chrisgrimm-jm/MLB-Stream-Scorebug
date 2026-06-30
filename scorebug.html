@@ -147,6 +147,10 @@ html, body {
 .dot.on-s { background: #f59e0b; border-color: #d97706; }
 .dot.on-o { background: #ef4444; border-color: #dc2626; }
 
+.seg-inning.no-bases .diamond-svg,
+.seg-inning.no-bases .base-sq { display: none; }
+.seg-inning.no-bases .inning-num { font-size: 32px; }
+
 
 </style>
 </head>
@@ -182,6 +186,7 @@ const TOPIC  = params.get('topic') || '';
 let delayMs  = 30000;
 let pollRate = 5000;
 let countHidden = [false, false, false];
+let basesHidden = [false, false, false];
 let todayGames = [];
 
 // ── Build bug HTML ──
@@ -322,6 +327,12 @@ function applyConfig(cfg) {
       if (bugs[i].lastData) render(bugs[i], bugs[i].lastData);
     });
   }
+  if (Array.isArray(cfg.basesHidden)) {
+    cfg.basesHidden.forEach((h, i) => {
+      basesHidden[i] = h;
+      if (bugs[i].lastData) render(bugs[i], bugs[i].lastData);
+    });
+  }
 }
 
 // ── Schedule + polling ──
@@ -401,10 +412,12 @@ function render(bug, data) {
   awayEl.textContent = awayScore;
   homeEl.textContent = homeScore;
 
-  const numEl = document.getElementById(`inning-num-${i}`);
-  const triT  = document.getElementById(`tri-top-${i}`);
-  const triB  = document.getElementById(`tri-bot-${i}`);
-  const bugEl = document.getElementById(`bug-${i}`);
+  const numEl   = document.getElementById(`inning-num-${i}`);
+  const triT    = document.getElementById(`tri-top-${i}`);
+  const triB    = document.getElementById(`tri-bot-${i}`);
+  const bugEl   = document.getElementById(`bug-${i}`);
+  const inningEl = bugEl.querySelector('.seg-inning');
+  inningEl.classList.toggle('no-bases', !!basesHidden[i]);
 
   if (isFinal) {
     numEl.textContent = 'F';

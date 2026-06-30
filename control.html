@@ -195,6 +195,7 @@ option { background: #0e1420; }
       <div class="bug-meta">
         <div class="sdot" id="sdot-0"></div>
         <span class="stext" id="stext-0">—</span>
+        <button class="toggle-btn" id="bases-toggle-0" onclick="toggleBases(0)">Bases</button>
         <button class="toggle-btn" id="count-toggle-0" onclick="toggleCount(0)">Count</button>
       </div>
     </div>
@@ -208,6 +209,7 @@ option { background: #0e1420; }
       <div class="bug-meta">
         <div class="sdot" id="sdot-1"></div>
         <span class="stext" id="stext-1">—</span>
+        <button class="toggle-btn" id="bases-toggle-1" onclick="toggleBases(1)">Bases</button>
         <button class="toggle-btn" id="count-toggle-1" onclick="toggleCount(1)">Count</button>
         <button class="toggle-btn" id="toggle-1" onclick="toggleBug(1)">Hide</button>
       </div>
@@ -222,6 +224,7 @@ option { background: #0e1420; }
       <div class="bug-meta">
         <div class="sdot" id="sdot-2"></div>
         <span class="stext" id="stext-2">—</span>
+        <button class="toggle-btn" id="bases-toggle-2" onclick="toggleBases(2)">Bases</button>
         <button class="toggle-btn" id="count-toggle-2" onclick="toggleCount(2)">Count</button>
         <button class="toggle-btn" id="toggle-2" onclick="toggleBug(2)">Hide</button>
       </div>
@@ -238,6 +241,7 @@ let todayGames = [];
 let hiddenState = [false, false, false];
 let pushTimer = null;
 let countHidden = [false, false, false];
+let basesHidden = [false, false, false];
 
 // ── Restore saved settings ──
 const saved = JSON.parse(localStorage.getItem('scorebug-ctrl') || '{}');
@@ -246,8 +250,10 @@ topicInput.value = saved.topic || '';
 if (saved.delay)       document.getElementById('delay-sel').value = saved.delay;
 if (saved.hidden)      hiddenState  = saved.hidden;
 if (saved.countHidden) countHidden  = saved.countHidden;
+if (saved.basesHidden) basesHidden  = saved.basesHidden;
 updateToggleButtons();
 updateCountToggles();
+updateBasesToggles();
 updateObsUrl();
 
 topicInput.addEventListener('input', () => {
@@ -277,6 +283,21 @@ function toggleBug(i) {
   hiddenState[i] = !hiddenState[i];
   updateToggleButtons();
   saveAndPush();
+}
+
+function toggleBases(i) {
+  basesHidden[i] = !basesHidden[i];
+  updateBasesToggles();
+  saveAndPush();
+}
+
+function updateBasesToggles() {
+  [0,1,2].forEach(i => {
+    const btn = document.getElementById(`bases-toggle-${i}`);
+    if (!btn) return;
+    btn.textContent = basesHidden[i] ? 'Bases Off' : 'Bases';
+    btn.classList.toggle('hidden-state', basesHidden[i]);
+  });
 }
 
 function toggleCount(i) {
@@ -309,6 +330,7 @@ function saveSettings() {
     delay:  document.getElementById('delay-sel').value,
     hidden: hiddenState,
     countHidden,
+    basesHidden,
     games:  [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value)
   }));
 }
@@ -327,7 +349,8 @@ async function pushConfig() {
     delay:  parseInt(document.getElementById('delay-sel').value),
     rate:   5000,
     hidden: hiddenState,
-    countHidden
+    countHidden,
+    basesHidden
   };
   const statusEl = document.getElementById('push-status');
   try {
