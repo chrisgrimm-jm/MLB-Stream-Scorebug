@@ -146,6 +146,22 @@ html, body {
 .dot.on-b { background: #22c55e; border-color: #16a34a; }
 .dot.on-s { background: #f59e0b; border-color: #d97706; }
 .dot.on-o { background: #ef4444; border-color: #dc2626; }
+
+.start-time-bar {
+  display: none;
+  margin-top: 9px;
+  margin-left: 253px;
+  filter: drop-shadow(0 3px 10px rgba(0,0,0,0.7));
+}
+.start-time-seg {
+  display: flex; align-items: center;
+  gap: 6px;
+  background: #fff; border-radius: 3px;
+  padding: 0 13px; height: 34px;
+  font-size: 15px; font-weight: 900;
+  color: rgba(0,0,0,0.55); letter-spacing: .04em;
+  white-space: nowrap;
+}
 </style>
 </head>
 <body>
@@ -235,6 +251,9 @@ function buildBug(i) {
           <div class="dot"></div><div class="dot"></div>
         </div>
       </div>
+    </div>
+    <div class="start-time-bar" id="start-time-bar-${i}">
+      <div class="start-time-seg" id="start-time-seg-${i}"></div>
     </div>`;
   document.getElementById('root').appendChild(wrap);
 }
@@ -431,11 +450,28 @@ function render(bug, data) {
 
   bug.prev = { away: awayScore, home: homeScore };
 
-  const cb = document.getElementById(`count-bar-${i}`);
+  const cb  = document.getElementById(`count-bar-${i}`);
+  const stb = document.getElementById(`start-time-bar-${i}`);
+  const sts = document.getElementById(`start-time-seg-${i}`);
+
+  const isPreview = state === 'Preview' || (!isFinal && state !== 'Live');
+
   if (isFinal || countHidden[i]) {
-    cb.style.display = 'none';
+    cb.style.display  = 'none';
+    stb.style.display = 'none';
+  } else if (isPreview) {
+    cb.style.display  = 'none';
+    const dt = gd.datetime?.dateTime;
+    if (dt) {
+      const t = new Date(dt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+      sts.textContent   = `🕐 ${t}`;
+    } else {
+      sts.textContent = 'Today';
+    }
+    stb.style.display = '';
   } else {
-    cb.style.display = '';
+    stb.style.display = 'none';
+    cb.style.display  = '';
     updateDots(`ball-dots-${i}`,   ls.balls   ?? 0, 3, 'on-b');
     updateDots(`strike-dots-${i}`, ls.strikes ?? 0, 2, 'on-s');
     updateDots(`out-dots-${i}`,    ls.outs    ?? 0, 2, 'on-o');
