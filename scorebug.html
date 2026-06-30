@@ -454,7 +454,7 @@ function render(bug, data) {
   const stb = document.getElementById(`start-time-bar-${i}`);
   const sts = document.getElementById(`start-time-seg-${i}`);
 
-  const isPreview = state === 'Preview' || (!isFinal && state !== 'Live');
+  const isPreview = state === 'Preview';
 
   if (isFinal || countHidden[i]) {
     cb.style.display  = 'none';
