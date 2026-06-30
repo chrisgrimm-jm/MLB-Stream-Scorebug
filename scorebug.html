@@ -259,7 +259,7 @@ function buildBug(i) {
 }
 [0,1,2].forEach(buildBug);
 
-const bugs = [0,1,2].map(i => ({ idx:i, gamePk:null, pollTimer:null, prev:{}, done:false }));
+const bugs = [0,1,2].map(i => ({ idx:i, gamePk:null, pollTimer:null, prev:{}, done:false, lastData:null }));
 
 function todayStr() {
   const d = new Date();
@@ -336,10 +336,7 @@ function applyConfig(cfg) {
   if (Array.isArray(cfg.countHidden)) {
     cfg.countHidden.forEach((h, i) => {
       countHidden[i] = h;
-      const cb = document.getElementById(`count-bar-${i}`);
-      if (cb && bugs[i].done === false) {
-        cb.style.display = h ? 'none' : '';
-      }
+      if (bugs[i].lastData) render(bugs[i], bugs[i].lastData);
     });
   }
 }
@@ -391,6 +388,7 @@ async function poll(bug) {
 }
 
 function render(bug, data) {
+  bug.lastData = data;
   const i  = bug.idx;
   const gd = data.gameData;
   const ls = data.liveData?.linescore || {};
