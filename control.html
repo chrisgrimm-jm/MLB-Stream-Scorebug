@@ -250,7 +250,11 @@ updateToggleButtons();
 updateCountToggles();
 updateObsUrl();
 
-topicInput.addEventListener('input', () => { updateObsUrl(); saveAndPush(); });
+topicInput.addEventListener('input', () => {
+  const clean = topicInput.value.replace(/\s+/g, '-');
+  if (clean !== topicInput.value) topicInput.value = clean;
+  updateObsUrl(); saveAndPush();
+});
 
 function updateObsUrl() {
   const topic = topicInput.value.trim();
