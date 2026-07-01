@@ -547,8 +547,6 @@ function updateRecommendations() {
   }
 
   list.innerHTML = recs.map((r, idx) => {
-    const bugNum = getBugAssignment(r.gamePk);
-    const rightEl = bugNum ? `<span class="rec-on-bug">On Bug ${bugNum}</span>` : '';
     return `
     <div class="rec-item">
       <span class="rec-num">${idx + 1}.</span>
@@ -556,10 +554,7 @@ function updateRecommendations() {
         <div class="rec-game">${r.label}</div>
         <div class="rec-desc">${r.desc}</div>
       </div>
-      <div class="rec-right">
-        <span class="rec-detail">${r.score}</span>
-        ${rightEl}
-      </div>
+      <span class="rec-detail">${r.score}</span>
     </div>`;
   }).join('');
 }
