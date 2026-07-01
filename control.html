@@ -159,6 +159,18 @@ select option:disabled { color: rgba(255,255,255,0.2); }
 .rec-assign { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.4); cursor: pointer; white-space: nowrap; transition: all .15s; }
 .rec-assign:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.collapse-btn {
+  font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.3);
+  cursor: pointer; transition: all .15s;
+}
+.collapse-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.collapsible { overflow: hidden; transition: max-height .25s ease, opacity .25s ease; max-height: 400px; opacity: 1; }
+.collapsible.collapsed { max-height: 0; opacity: 0; }
 .push-status {
   font-size: 11px;
   color: rgba(255,255,255,0.22);
@@ -176,15 +188,20 @@ select option:disabled { color: rgba(255,255,255,0.2); }
 
   <!-- Unique ID + OBS URL -->
   <div class="section">
-    <div class="section-title">Connection</div>
-    <div class="row">
-      <label>Unique ID</label>
-      <input type="text" id="topic-input" placeholder="e.g. jomboy-scorebug-x7k2" autocomplete="off" spellcheck="false">
+    <div class="section-header">
+      <div class="section-title">Connection</div>
+      <button class="collapse-btn" id="conn-toggle" onclick="toggleConnection()">Hide</button>
     </div>
-    <p class="hint">Create any ID you want — this is how the control page talks to OBS. Make it unique so it doesn't conflict with anyone else's scorebug.</p>
-    <div class="obs-url-box">
-      <span class="obs-url-text" id="obs-url-text">Enter a Unique ID above to generate your OBS URL</span>
-      <button class="copy-btn" id="copy-btn" onclick="copyUrl()">Copy</button>
+    <div class="collapsible" id="conn-body">
+      <div class="row">
+        <label>Unique ID</label>
+        <input type="text" id="topic-input" placeholder="e.g. jomboy-scorebug-x7k2" autocomplete="off" spellcheck="false">
+      </div>
+      <p class="hint">Create any ID you want — this is how the control page talks to OBS. Make it unique so it doesn't conflict with anyone else's scorebug.</p>
+      <div class="obs-url-box">
+        <span class="obs-url-text" id="obs-url-text">Enter a Unique ID above to generate your OBS URL</span>
+        <button class="copy-btn" id="copy-btn" onclick="copyUrl()">Copy</button>
+      </div>
     </div>
   </div>
 
@@ -278,6 +295,10 @@ if (saved.delay)       document.getElementById('delay-sel').value = saved.delay;
 if (saved.hidden)      hiddenState  = saved.hidden;
 if (saved.countHidden) countHidden  = saved.countHidden;
 if (saved.basesHidden) basesHidden  = saved.basesHidden;
+if (saved.connCollapsed) {
+  document.getElementById('conn-body').classList.add('collapsed');
+  document.getElementById('conn-toggle').textContent = 'Show';
+}
 updateToggleButtons();
 updateCountToggles();
 updateBasesToggles();
@@ -351,6 +372,14 @@ function updateToggleButtons() {
   });
 }
 
+function toggleConnection() {
+  const body = document.getElementById('conn-body');
+  const btn  = document.getElementById('conn-toggle');
+  const collapsed = body.classList.toggle('collapsed');
+  btn.textContent = collapsed ? 'Show' : 'Hide';
+  saveSettings();
+}
+
 function saveSettings() {
   localStorage.setItem('scorebug-ctrl', JSON.stringify({
     topic:  topicInput.value.trim(),
@@ -358,7 +387,8 @@ function saveSettings() {
     hidden: hiddenState,
     countHidden,
     basesHidden,
-    games:  [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value)
+    games:  [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value),
+    connCollapsed: document.getElementById('conn-body').classList.contains('collapsed')
   }));
 }
 
