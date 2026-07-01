@@ -153,7 +153,11 @@ select option:disabled { color: rgba(255,255,255,0.2); }
 .rec-body { flex: 1; min-width: 0; }
 .rec-game { font-size: 13px; font-weight: 700; color: #e0e6ee; }
 .rec-desc { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
-.rec-detail { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); flex-shrink: 0; text-align: right; white-space: nowrap; }
+.rec-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.rec-detail { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); white-space: nowrap; }
+.rec-on-bug { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; background: rgba(34,197,94,0.12); color: rgba(34,197,94,0.7); white-space: nowrap; }
+.rec-assign { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.4); cursor: pointer; white-space: nowrap; transition: all .15s; }
+.rec-assign:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
 .push-status {
   font-size: 11px;
@@ -446,6 +450,38 @@ function refreshOptionStates() {
   });
 }
 
+function getBugAssignment(gamePk) {
+  for (let i = 0; i < 3; i++) {
+    if (document.getElementById(`game-sel-${i}`).value === String(gamePk)) return i + 1;
+  }
+  return null;
+}
+
+function assignToBestSlot(gamePk) {
+  // Prefer empty slot first
+  for (let i = 0; i < 3; i++) {
+    if (!document.getElementById(`game-sel-${i}`).value) {
+      assignGame(i, gamePk); return;
+    }
+  }
+  // Then a slot with a Final game
+  for (let i = 0; i < 3; i++) {
+    const pk = document.getElementById(`game-sel-${i}`).value;
+    const g  = todayGames.find(g => String(g.gamePk) === pk);
+    if (g && g.status.abstractGameState === 'Final') {
+      assignGame(i, gamePk); return;
+    }
+  }
+}
+
+function assignGame(slotIdx, gamePk) {
+  const sel = document.getElementById(`game-sel-${slotIdx}`);
+  sel.value = String(gamePk);
+  updateGameStatus(slotIdx);
+  saveAndPush();
+  updateRecommendations();
+}
+
 function gameDesc(diff, inning, half, total, aRuns, hRuns) {
   const halfStr = half === 'Top' ? 'top' : 'bottom';
   const innStr  = inning >= 9 ? `${inning === 9 ? 'ninth' : inning + 'th'} inning` : `${['','1st','2nd','3rd','4th','5th','6th','7th','8th'][inning] || inning + 'th'} inning`;
@@ -500,7 +536,7 @@ function updateRecommendations() {
     else if (total >= 10)           priority = 35;
 
     const score = `${aRuns}–${hRuns}  ${half === 'Top' ? '▲' : '▼'}${inning}`;
-    recs.push({ label: `${away} @ ${home}`, desc, score, priority });
+    recs.push({ label: `${away} @ ${home}`, desc, score, priority, gamePk: g.gamePk });
   });
 
   recs.sort((a, b) => b.priority - a.priority);
@@ -510,15 +546,24 @@ function updateRecommendations() {
     return;
   }
 
-  list.innerHTML = recs.map((r, idx) => `
+  list.innerHTML = recs.map((r, idx) => {
+    const bugNum = getBugAssignment(r.gamePk);
+    const rightEl = bugNum
+      ? `<span class="rec-on-bug">On Bug ${bugNum}</span>`
+      : `<button class="rec-assign" onclick="assignToBestSlot(${r.gamePk})">+ Add to Bug</button>`;
+    return `
     <div class="rec-item">
       <span class="rec-num">${idx + 1}.</span>
       <div class="rec-body">
         <div class="rec-game">${r.label}</div>
         <div class="rec-desc">${r.desc}</div>
       </div>
-      <span class="rec-detail">${r.score}</span>
-    </div>`).join('');
+      <div class="rec-right">
+        <span class="rec-detail">${r.score}</span>
+        ${rightEl}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function updateGameStatus(i) {
