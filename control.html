@@ -145,20 +145,15 @@ select option:disabled { color: rgba(255,255,255,0.2); }
 .rec-empty { font-size: 12px; color: rgba(255,255,255,0.2); }
 .rec-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 8px 0;
+  padding: 9px 0;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 .rec-item:first-child { border-top: none; }
-.rec-badge {
-  font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
-  padding: 3px 7px; border-radius: 3px; flex-shrink: 0;
-}
-.rec-badge.close  { background: rgba(34,197,94,0.15);  color: #22c55e; }
-.rec-badge.tied   { background: rgba(245,158,11,0.15); color: #f59e0b; }
-.rec-badge.late   { background: rgba(239,68,68,0.15);  color: #ef4444; }
-.rec-badge.action { background: rgba(99,102,241,0.15); color: #818cf8; }
-.rec-game { font-size: 13px; font-weight: 700; color: #e0e6ee; flex: 1; }
-.rec-detail { font-size: 11px; color: rgba(255,255,255,0.35); }
+.rec-num { font-size: 12px; font-weight: 900; color: rgba(255,255,255,0.2); width: 14px; flex-shrink: 0; text-align: right; }
+.rec-body { flex: 1; min-width: 0; }
+.rec-game { font-size: 13px; font-weight: 700; color: #e0e6ee; }
+.rec-desc { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.rec-detail { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); flex-shrink: 0; text-align: right; white-space: nowrap; }
 
 .push-status {
   font-size: 11px;
@@ -451,6 +446,24 @@ function refreshOptionStates() {
   });
 }
 
+function gameDesc(diff, inning, half, total, aRuns, hRuns) {
+  const halfStr = half === 'Top' ? 'top' : 'bottom';
+  const innStr  = inning >= 9 ? `${inning === 9 ? 'ninth' : inning + 'th'} inning` : `${['','1st','2nd','3rd','4th','5th','6th','7th','8th'][inning] || inning + 'th'} inning`;
+
+  if (diff === 0 && inning >= 9) return `Tied in the ${innStr} — extras possible`;
+  if (diff === 0 && inning >= 7) return `Tied in the late innings`;
+  if (diff === 0)                return `Tied game in the ${innStr}`;
+  if (diff === 1 && inning >= 9) return `One-run game in the ${innStr} — anyone's game`;
+  if (diff === 1 && inning >= 7) return `One-run game, ${halfStr} of the ${innStr}`;
+  if (diff === 2 && inning >= 8) return `Two-run game in the final innings`;
+  if (diff === 2 && inning >= 7) return `Two-run game late — still within reach`;
+  if (diff === 1)                return `One-run game in the ${innStr}`;
+  if (diff <= 2)                 return `Close game in the ${innStr}`;
+  if (total >= 14)               return `High-scoring shootout — ${total} runs combined`;
+  if (total >= 10)               return `Plenty of offense, ${total} runs scored`;
+  return null;
+}
+
 function updateRecommendations() {
   const live = todayGames.filter(g => g.status.abstractGameState === 'Live');
   const list = document.getElementById('rec-list');
@@ -461,31 +474,33 @@ function updateRecommendations() {
 
   const recs = [];
   live.forEach(g => {
-    const ls = g.linescore || {};
-    const away = g.teams.away.team.abbreviation;
-    const home = g.teams.home.team.abbreviation;
+    const ls    = g.linescore || {};
+    const away  = g.teams.away.team.abbreviation;
+    const home  = g.teams.home.team.abbreviation;
     const aRuns = ls.teams?.away?.runs ?? 0;
     const hRuns = ls.teams?.home?.runs ?? 0;
     const diff  = Math.abs(aRuns - hRuns);
     const inning = ls.currentInning || 1;
     const half   = ls.inningHalf || 'Top';
     const total  = aRuns + hRuns;
-    const label  = `${away} @ ${home}`;
-    const score  = `${aRuns}–${hRuns}, ${half === 'Top' ? '▲' : '▼'}${inning}`;
+    const desc   = gameDesc(diff, inning, half, total, aRuns, hRuns);
+    if (!desc) return;
 
-    if (diff === 0 && inning >= 7) {
-      recs.push({ badge: 'tied', badgeText: 'Tied Late', label, score, priority: 10 });
-    } else if (diff === 0) {
-      recs.push({ badge: 'tied', badgeText: 'Tied', label, score, priority: 7 });
-    } else if (diff <= 1 && inning >= 7) {
-      recs.push({ badge: 'late', badgeText: 'Late & Close', label, score, priority: 9 });
-    } else if (diff <= 2 && inning >= 7) {
-      recs.push({ badge: 'close', badgeText: 'Close Late', label, score, priority: 8 });
-    } else if (diff <= 1) {
-      recs.push({ badge: 'close', badgeText: 'Close', label, score, priority: 6 });
-    } else if (total >= 10) {
-      recs.push({ badge: 'action', badgeText: 'High Scoring', label, score, priority: 5 });
-    }
+    let priority = 0;
+    if (diff === 0 && inning >= 9)  priority = 100;
+    else if (diff === 1 && inning >= 9) priority = 95;
+    else if (diff === 0 && inning >= 7) priority = 90;
+    else if (diff === 1 && inning >= 7) priority = 85;
+    else if (diff === 2 && inning >= 8) priority = 80;
+    else if (diff === 2 && inning >= 7) priority = 75;
+    else if (diff === 0)            priority = 60;
+    else if (diff === 1)            priority = 55;
+    else if (diff <= 2)             priority = 50;
+    else if (total >= 14)           priority = 40;
+    else if (total >= 10)           priority = 35;
+
+    const score = `${aRuns}–${hRuns}  ${half === 'Top' ? '▲' : '▼'}${inning}`;
+    recs.push({ label: `${away} @ ${home}`, desc, score, priority });
   });
 
   recs.sort((a, b) => b.priority - a.priority);
@@ -495,10 +510,13 @@ function updateRecommendations() {
     return;
   }
 
-  list.innerHTML = recs.map(r => `
+  list.innerHTML = recs.map((r, idx) => `
     <div class="rec-item">
-      <span class="rec-badge ${r.badge}">${r.badgeText}</span>
-      <span class="rec-game">${r.label}</span>
+      <span class="rec-num">${idx + 1}.</span>
+      <div class="rec-body">
+        <div class="rec-game">${r.label}</div>
+        <div class="rec-desc">${r.desc}</div>
+      </div>
       <span class="rec-detail">${r.score}</span>
     </div>`).join('');
 }
