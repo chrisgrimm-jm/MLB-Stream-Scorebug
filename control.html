@@ -414,7 +414,7 @@ async function pushConfig() {
     await fetch(`https://ntfy.sh/${topic}`, {
       method: 'POST',
       body: JSON.stringify(cfg),
-      headers: { 'Content-Type': 'application/json', 'Title': 'scorebug-config' }
+      headers: { 'Content-Type': 'text/plain', 'Title': 'scorebug-config' }
     });
     statusEl.textContent = `Config pushed · ${new Date().toLocaleTimeString()}`;
     statusEl.className = 'push-status ok';
