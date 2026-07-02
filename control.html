@@ -474,11 +474,11 @@ async function loadSchedule() {
 function checkAllFinal() {
   const selected = [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value).filter(Boolean);
   if (!selected.length) return;
-  const allFinal = selected.every(pk => {
+  const anyFinal = selected.some(pk => {
     const g = todayGames.find(g => String(g.gamePk) === pk);
     return g && g.status.abstractGameState === 'Final';
   });
-  if (allFinal) location.reload();
+  if (anyFinal) location.reload();
 }
 
 function refreshOptionStates() {
