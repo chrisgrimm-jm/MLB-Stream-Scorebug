@@ -483,7 +483,12 @@ function checkAllFinal() {
     const g = todayGames.find(g => String(g.gamePk) === pk);
     return g && g.status.abstractGameState === 'Final';
   });
-  if (anyFinal) location.href = location.pathname + '?v=' + Date.now();
+  if (anyFinal) {
+    const s = JSON.parse(localStorage.getItem('scorebug-ctrl') || '{}');
+    delete s.games;
+    localStorage.setItem('scorebug-ctrl', JSON.stringify(s));
+    location.href = location.pathname + '?v=' + Date.now();
+  }
 }
 
 function refreshOptionStates() {
