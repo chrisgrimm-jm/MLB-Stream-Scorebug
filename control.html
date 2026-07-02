@@ -414,7 +414,7 @@ async function pushConfig() {
     await fetch(`https://ntfy.sh/${topic}`, {
       method: 'POST',
       body: JSON.stringify(cfg),
-      headers: { 'Content-Type': 'text/plain', 'Title': 'scorebug-config' }
+      headers: { 'Content-Type': 'application/json', 'Title': 'scorebug-config' }
     });
     statusEl.textContent = `Config pushed · ${new Date().toLocaleTimeString()}`;
     statusEl.className = 'push-status ok';
@@ -435,9 +435,8 @@ async function loadSchedule() {
     todayGames = data.dates?.[0]?.games || [];
 
     const savedGames = (JSON.parse(localStorage.getItem('scorebug-ctrl') || '{}')).games || [];
-    const live    = todayGames.filter(g => g.status.abstractGameState === 'Live');
-    const notFinal = todayGames.filter(g => g.status.abstractGameState !== 'Final');
-    const pool = live.length >= 3 ? live : (notFinal.length ? notFinal : []);
+    const live = todayGames.filter(g => g.status.abstractGameState === 'Live');
+    const pool = live.length >= 3 ? live : todayGames;
 
     [0,1,2].forEach(i => {
       const sel = document.getElementById(`game-sel-${i}`);
@@ -452,46 +451,23 @@ async function loadSchedule() {
         if (g.status.abstractGameState === 'Final') opt.disabled = true;
         sel.appendChild(opt);
       });
-      const saved = savedGames[i];
-      const savedGame = saved && todayGames.find(g => String(g.gamePk) === String(saved));
-      if (savedGame && savedGame.status.abstractGameState !== 'Final') {
-        sel.value = saved;
+      if (savedGames[i] && sel.querySelector(`option[value="${savedGames[i]}"]`)) {
+        sel.value = savedGames[i];
       } else {
-        const g = pool[i] || null;
-        sel.value = g ? g.gamePk : '';
+        const g = pool[i] || pool[0];
+        if (g) sel.value = g.gamePk;
       }
       updateGameStatus(i);
     });
 
     saveAndPush();
     updateRecommendations();
+    setInterval(() => {
+      [0,1,2].forEach(updateGameStatus);
+      refreshOptionStates();
+      updateRecommendations();
+    }, 30000);
   } catch(e) { console.error(e); }
-
-  setInterval(async () => {
-    try {
-      const d = await fetch(`${MLB}/api/v1/schedule?sportId=1&date=${todayStr()}&hydrate=team,linescore`).then(r => r.json());
-      todayGames = d.dates?.[0]?.games || [];
-    } catch(e) { console.error(e); }
-    [0,1,2].forEach(updateGameStatus);
-    refreshOptionStates();
-    updateRecommendations();
-    checkAllFinal();
-  }, 30000);
-}
-
-function checkAllFinal() {
-  const selected = [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value).filter(Boolean);
-  if (!selected.length) return;
-  const anyFinal = selected.some(pk => {
-    const g = todayGames.find(g => String(g.gamePk) === pk);
-    return g && g.status.abstractGameState === 'Final';
-  });
-  if (anyFinal) {
-    const s = JSON.parse(localStorage.getItem('scorebug-ctrl') || '{}');
-    delete s.games;
-    localStorage.setItem('scorebug-ctrl', JSON.stringify(s));
-    location.href = location.pathname + '?v=' + Date.now();
-  }
 }
 
 function refreshOptionStates() {
