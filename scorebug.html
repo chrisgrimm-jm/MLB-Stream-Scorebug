@@ -485,6 +485,22 @@ function schedule3amRefresh() {
 
 loadSchedule();
 schedule3amRefresh();
+
+// ── Debug overlay (add &debug=1 to URL to enable) ──
+if (params.get('debug') === '1') {
+  const dbg = document.createElement('div');
+  dbg.id = 'dbg';
+  dbg.style.cssText = 'position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.85);color:#fff;font:13px monospace;padding:10px 14px;border-radius:6px;z-index:9999;line-height:1.6;';
+  document.body.appendChild(dbg);
+
+  function dbgUpdate() {
+    const state = !TOPIC ? 'no topic' : _sseReconnecting ? 'reconnecting…' : _sse ? 'connected' : 'disconnected';
+    const ago = _lastMsg ? Math.round((Date.now() - _lastMsg) / 1000) + 's ago' : 'never';
+    dbg.innerHTML = `TOPIC: ${TOPIC || '—'}<br>SSE: ${state}<br>Last msg: ${ago}<br>Games: ${bugs.map(b=>b.gamePk||'—').join(', ')}`;
+  }
+  dbgUpdate();
+  setInterval(dbgUpdate, 2000);
+}
 </script>
 </body>
 </html>
