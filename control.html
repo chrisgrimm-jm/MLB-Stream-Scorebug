@@ -466,8 +466,19 @@ async function loadSchedule() {
       [0,1,2].forEach(updateGameStatus);
       refreshOptionStates();
       updateRecommendations();
+      checkAllFinal();
     }, 30000);
   } catch(e) { console.error(e); }
+}
+
+function checkAllFinal() {
+  const selected = [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value).filter(Boolean);
+  if (!selected.length) return;
+  const allFinal = selected.every(pk => {
+    const g = todayGames.find(g => String(g.gamePk) === pk);
+    return g && g.status.abstractGameState === 'Final';
+  });
+  if (allFinal) location.reload();
 }
 
 function refreshOptionStates() {
