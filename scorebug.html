@@ -262,26 +262,26 @@ async function apiFetch(url) {
 }
 
 // ── ntfy polling ──
-let _lastMsgId = '';
+let _lastPollTime = Math.floor(Date.now() / 1000) - 1800; // 30 min ago on first load
 
 async function pollNtfy() {
   if (!TOPIC) return;
   try {
-    const url = _lastMsgId
-      ? `https://ntfy.sh/${TOPIC}/json?poll=1&since=${_lastMsgId}`
-      : `https://ntfy.sh/${TOPIC}/json?poll=1&since=30m`;
-    const res = await fetch(url);
+    const now = Math.floor(Date.now() / 1000);
+    const res = await fetch(`https://ntfy.sh/${TOPIC}/json?poll=1&since=${_lastPollTime}`);
     const text = await res.text();
     const lines = text.trim().split('\n').filter(Boolean);
+    let gotMessage = false;
     for (const line of lines) {
       try {
         const msg = JSON.parse(line);
-        if (msg.id) _lastMsgId = msg.id;
         if (msg.event !== 'message') continue;
+        gotMessage = true;
         const cfg = JSON.parse(msg.message);
         applyConfig(cfg);
       } catch {}
     }
+    _lastPollTime = now;
   } catch {}
 }
 
