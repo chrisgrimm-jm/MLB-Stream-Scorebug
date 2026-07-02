@@ -462,7 +462,11 @@ async function loadSchedule() {
 
     saveAndPush();
     updateRecommendations();
-    setInterval(() => {
+    setInterval(async () => {
+      try {
+        const d = await fetch(`${MLB}/api/v1/schedule?sportId=1&date=${todayStr()}&hydrate=team,linescore`).then(r => r.json());
+        todayGames = d.dates?.[0]?.games || [];
+      } catch(e) { console.error(e); }
       [0,1,2].forEach(updateGameStatus);
       refreshOptionStates();
       updateRecommendations();
