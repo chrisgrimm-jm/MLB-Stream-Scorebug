@@ -435,8 +435,9 @@ async function loadSchedule() {
     todayGames = data.dates?.[0]?.games || [];
 
     const savedGames = (JSON.parse(localStorage.getItem('scorebug-ctrl') || '{}')).games || [];
-    const live = todayGames.filter(g => g.status.abstractGameState === 'Live');
-    const pool = live.length >= 3 ? live : todayGames;
+    const live    = todayGames.filter(g => g.status.abstractGameState === 'Live');
+    const notFinal = todayGames.filter(g => g.status.abstractGameState !== 'Final');
+    const pool = live.length >= 3 ? live : (notFinal.length ? notFinal : []);
 
     [0,1,2].forEach(i => {
       const sel = document.getElementById(`game-sel-${i}`);
@@ -451,11 +452,13 @@ async function loadSchedule() {
         if (g.status.abstractGameState === 'Final') opt.disabled = true;
         sel.appendChild(opt);
       });
-      if (savedGames[i] && sel.querySelector(`option[value="${savedGames[i]}"]`)) {
-        sel.value = savedGames[i];
+      const saved = savedGames[i];
+      const savedGame = saved && todayGames.find(g => String(g.gamePk) === String(saved));
+      if (savedGame && savedGame.status.abstractGameState !== 'Final') {
+        sel.value = saved;
       } else {
-        const g = pool[i] || pool[0];
-        if (g) sel.value = g.gamePk;
+        const g = pool[i] || null;
+        sel.value = g ? g.gamePk : '';
       }
       updateGameStatus(i);
     });
