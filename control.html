@@ -444,7 +444,8 @@ async function loadSchedule() {
 
     const savedGames = (JSON.parse(localStorage.getItem('scorebug-ctrl') || '{}')).games || [];
     const live = todayGames.filter(g => g.status.abstractGameState === 'Live');
-    const pool = live.length >= 3 ? live : todayGames;
+    const notFinal = todayGames.filter(g => g.status.abstractGameState !== 'Final');
+    const pool = live.length >= 3 ? live : notFinal;
 
     [0,1,2].forEach(i => {
       const sel = document.getElementById(`game-sel-${i}`);
@@ -459,23 +460,47 @@ async function loadSchedule() {
         if (g.status.abstractGameState === 'Final') opt.disabled = true;
         sel.appendChild(opt);
       });
-      if (savedGames[i] && sel.querySelector(`option[value="${savedGames[i]}"]`)) {
+      const savedGame = savedGames[i] && todayGames.find(g => String(g.gamePk) === String(savedGames[i]));
+      if (savedGame && savedGame.status.abstractGameState !== 'Final') {
         sel.value = savedGames[i];
       } else {
-        const g = pool[i] || pool[0];
-        if (g) sel.value = g.gamePk;
+        const g = pool[i] || null;
+        sel.value = g ? g.gamePk : '';
       }
       updateGameStatus(i);
     });
 
     saveAndPush();
     updateRecommendations();
-    setInterval(() => {
-      [0,1,2].forEach(updateGameStatus);
-      refreshOptionStates();
-      updateRecommendations();
-    }, 30000);
   } catch(e) { console.error(e); }
+
+  setInterval(async () => {
+    try {
+      const d = await fetch(`${MLB}/api/v1/schedule?sportId=1&date=${todayStr()}&hydrate=team,linescore`).then(r => r.json());
+      todayGames = d.dates?.[0]?.games || [];
+    } catch(e) { console.error(e); }
+    [0,1,2].forEach(updateGameStatus);
+    refreshOptionStates();
+    updateRecommendations();
+    checkForFinishedGame();
+  }, 30000);
+}
+
+// Auto-reload when a selected game goes Final, with a hard guard:
+// never more than one auto-reload per 5 minutes, no matter what.
+function checkForFinishedGame() {
+  const selected = [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value).filter(Boolean);
+  if (!selected.length) return;
+  const anyFinal = selected.some(pk => {
+    const g = todayGames.find(g => String(g.gamePk) === pk);
+    return g && g.status.abstractGameState === 'Final';
+  });
+  if (!anyFinal) return;
+
+  const lastReload = parseInt(localStorage.getItem('scorebug-last-reload') || '0');
+  if (Date.now() - lastReload < 5 * 60 * 1000) return;
+  localStorage.setItem('scorebug-last-reload', String(Date.now()));
+  location.reload();
 }
 
 function refreshOptionStates() {
