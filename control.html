@@ -411,11 +411,19 @@ async function pushConfig() {
   };
   const statusEl = document.getElementById('push-status');
   try {
-    await fetch(`https://ntfy.sh/${topic}`, {
+    const res = await fetch(`https://ntfy.sh/${topic}`, {
       method: 'POST',
       body: JSON.stringify(cfg),
       headers: { 'Content-Type': 'application/json', 'Title': 'scorebug-config' }
     });
+    if (!res.ok) {
+      const msg = res.status === 429
+        ? 'ntfy.sh rate limit reached — wait a few minutes and try again'
+        : `ntfy.sh error ${res.status}`;
+      statusEl.textContent = `Push failed: ${msg}`;
+      statusEl.className = 'push-status err';
+      return;
+    }
     statusEl.textContent = `Config pushed · ${new Date().toLocaleTimeString()}`;
     statusEl.className = 'push-status ok';
   } catch(e) {

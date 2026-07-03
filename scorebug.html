@@ -261,35 +261,47 @@ async function apiFetch(url) {
   return r.json();
 }
 
-// ── ntfy polling ──
-let _ntfyLastApplied = '';
+// ── ntfy SSE ──
+let _sse = null;
+let _sseReconnecting = false;
+let _lastMsg = 0;
 
-async function pollNtfy() {
-  if (!TOPIC) return;
-  try {
-    const res = await fetch(`https://ntfy.sh/${TOPIC}/json?poll=1&since=10m`);
-    const text = await res.text();
-    const lines = text.trim().split('\n').filter(Boolean);
-    // find the latest message only
-    let latest = null;
-    for (const line of lines) {
-      try {
-        const msg = JSON.parse(line);
-        if (msg.event === 'message') latest = msg;
-      } catch {}
-    }
-    if (latest && latest.id !== _ntfyLastApplied) {
-      _ntfyLastApplied = latest.id;
-      const cfg = JSON.parse(latest.message);
+function connectNtfy() {
+  if (_sseReconnecting) return;
+  if (_sse) { try { _sse.close(); } catch {} _sse = null; }
+
+  _sse = new EventSource(`https://ntfy.sh/${TOPIC}/sse?since=30m`);
+  _lastMsg = Date.now();
+
+  _sse.addEventListener('message', e => {
+    _lastMsg = Date.now();
+    try {
+      const outer = JSON.parse(e.data);
+      if (outer.event === 'keepalive') return;
+      const cfg = JSON.parse(outer.message);
       applyConfig(cfg);
-    }
-  } catch {}
+    } catch {}
+  });
+
+  _sse.onerror = () => {
+    if (_sseReconnecting) return;
+    _sseReconnecting = true;
+    try { _sse.close(); } catch {}
+    _sse = null;
+    setTimeout(() => { _sseReconnecting = false; connectNtfy(); }, 15000);
+  };
 }
 
-if (TOPIC) {
-  pollNtfy();
-  setInterval(pollNtfy, 3000);
-}
+if (TOPIC) connectNtfy();
+
+// Watchdog — if no message (including keepalives) for 90s, force reconnect
+setInterval(() => {
+  if (!TOPIC || _sseReconnecting) return;
+  if (Date.now() - _lastMsg > 90000) {
+    _sseReconnecting = false;
+    connectNtfy();
+  }
+}, 30000);
 
 function applyConfig(cfg) {
   if (typeof cfg.delay === 'number') delayMs = cfg.delay;
