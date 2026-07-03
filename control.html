@@ -486,9 +486,13 @@ async function loadSchedule() {
   }, 30000);
 }
 
-// Auto-reload when a selected game goes Final, with a hard guard:
-// never more than one auto-reload per 5 minutes, no matter what.
+// Auto-reload when a selected game goes Final, with two guards:
+// 1. Wait out the spoiler delay first, so the bug doesn't change on
+//    stream before viewers have seen the final out.
+// 2. Never more than one auto-reload per 5 minutes, no matter what.
+let reloadPending = false;
 function checkForFinishedGame() {
+  if (reloadPending) return;
   const selected = [0,1,2].map(i => document.getElementById(`game-sel-${i}`).value).filter(Boolean);
   if (!selected.length) return;
   const anyFinal = selected.some(pk => {
@@ -499,8 +503,13 @@ function checkForFinishedGame() {
 
   const lastReload = parseInt(localStorage.getItem('scorebug-last-reload') || '0');
   if (Date.now() - lastReload < 5 * 60 * 1000) return;
-  localStorage.setItem('scorebug-last-reload', String(Date.now()));
-  location.reload();
+
+  reloadPending = true;
+  const spoilerDelay = parseInt(document.getElementById('delay-sel').value) || 30000;
+  setTimeout(() => {
+    localStorage.setItem('scorebug-last-reload', String(Date.now()));
+    location.reload();
+  }, spoilerDelay + 10000);
 }
 
 function refreshOptionStates() {
